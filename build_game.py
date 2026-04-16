@@ -70,7 +70,7 @@ NIVEAUX = {
         [-1, -1, -1, -1, -1, -1, -1, -1, -1]],
 
     5: [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-        [-1,  0,  0,  0,  0,  0,  0,  0,  0, -1],
+        [-1,  0,  0,  1,  0,  0,  1,  0,  0, -1],
         [-1,  0,  2,  0, -1, -1,  0,  2,  0, -1],
         [-1,  0,  0,  0, -1,  0,  0,  0,  0, -1],
         [-1,  0, -1,  2,  0,  0,  2, -1,  0, -1],
@@ -247,7 +247,7 @@ def reconstruire_chemin(prev, etat_final):
     chemin.reverse()  # on remet dans l'ordre chronologique
     return chemin
 
-def solveur(matrice, mode='BFS'):
+def solveur(matrice, mode='BFS', stop_flag=None):
     etat_initial = get_etat(matrice)
     prev = {etat_initial: None}  # trace le chemin
 
@@ -261,6 +261,9 @@ def solveur(matrice, mode='BFS'):
 
     while file_ou_pile:
         etapes += 1
+
+        if stop_flag is not None and etapes % 500 == 0 and stop_flag():
+            return None, etapes, len(visites)
 
         if mode == 'BFS':
             actuel = file_ou_pile.pop(0)

@@ -213,8 +213,10 @@ class App:
                                  3, border_radius=16)
             btn.draw(self.screen)
 
-        # Réinitialiser — juste sous A* avec un peu plus d'espace
-        if self.solver_status in ("done", "no_solution"):
+        # Bouton "Arrêt" pendant le calcul, "Réinitialiser" après
+        if self.solver_status == "running":
+            Button(RX, 360, 320, 61, "Arrêt", self.font_sm).draw(self.screen)
+        elif self.solver_status in ("done", "no_solution", "stopped"):
             Button(RX, 360, 320, 61, "Réinitialiser", self.font_sm).draw(self.screen)
 
         if self.speed_slider:
@@ -231,7 +233,16 @@ class App:
         Button(RX, WINDOW_H - 93, 320, 67, "< Accueil", self.font_sm).draw(self.screen)
 
     def _draw_solver_stats(self, rx):
-        if self.solver_status == "no_solution":
+        if self.solver_status == "stopped":
+            self.screen.blit(
+                self.font_sm.render("Calcul interrompu", True, CAISSE_C), (rx, 627))
+            for i, line in enumerate([
+                f"Ops      : {self.solver_etapes}",
+                f"Sommets  : {self.solver_visites}",
+            ]):
+                self.screen.blit(
+                    self.font_sm.render(line, True, TEXTE_C), (rx, 667 + i * 40))
+        elif self.solver_status == "no_solution":
             self.screen.blit(
                 self.font.render("Aucune solution :(", True, CAISSE_C), (rx, 627))
         else:
@@ -263,7 +274,10 @@ class App:
         if self.solver_status == "idle":
             if Button(RX, 627, 320, 73, "Résoudre", self.font).clicked(event):
                 self._start_solver()
-        elif self.solver_status in ("done", "no_solution"):
+        elif self.solver_status == "running":
+            if Button(RX, 360, 320, 61, "Arrêt", self.font_sm).clicked(event):
+                self.solver_stop = True
+        elif self.solver_status in ("done", "no_solution", "stopped"):
             if Button(RX, 360, 320, 61, "Réinitialiser", self.font_sm).clicked(event):
                 self._reset_solver()
 
@@ -276,13 +290,15 @@ class App:
 
     def _solver_worker(self):
         chemin, etapes, nb_visites = solveur(
-            copy.deepcopy(self.matrice_solver_init), self.solver_algo
+            copy.deepcopy(self.matrice_solver_init), self.solver_algo,
+            stop_flag=lambda: self.solver_stop,
         )
-        if self.solver_stop:
-            return
         self.solver_etapes  = etapes
         self.solver_visites = nb_visites
-        if chemin:
+        if self.solver_stop:
+            self.solver_chemin = None
+            self.solver_status = "stopped"
+        elif chemin:
             self.solver_chemin = chemin
             self.solver_status = "done"
             self.replay_index  = 0
@@ -295,6 +311,7 @@ class App:
 
     def _reset_solver(self):
         self.matrice        = copy.deepcopy(self.matrice_solver_init)
+        self.solver_stop    = False
         self.solver_status  = "idle"
         self.solver_chemin  = None
         self.solver_etapes  = 0

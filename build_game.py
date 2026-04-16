@@ -62,7 +62,7 @@ NIVEAUX = {
     4: [[-1, -1, -1, -1, -1, -1, -1, -1, -1],
         [-1,  0,  0,  0,  0,  0,  0,  0, -1],
         [-1,  0,  2,  0, -1,  0,  2,  0, -1],
-        [-1,  0,  0, -1, -1, -1,  0,  0, -1],
+        [-1,  0,  0,  0, -1,  0,  0,  0, -1],
         [-1,  0,  2,  0,  3,  0,  2,  0, -1],
         [-1,  0,  0, -1, -1, -1,  0,  0, -1],
         [-1,  0,  1,  0,  0,  0,  1,  0, -1],
@@ -170,7 +170,11 @@ def deplacer_joueur(matrice, direction):
             matrice[cy][cx] = CAISSE_SUR_CIBLE
         else :
             matrice[cy][cx] = CAISSE
-
+        if matrice[ny][nx] == CAISSE_SUR_CIBLE:
+                matrice[ny][nx] = CIBLE
+        else:
+            matrice[ny][nx] = SOL
+            
     if matrice[jy][jx] == JOUEUR_SUR_CIBLE:
         matrice[jy][jx] = CIBLE 
     else :

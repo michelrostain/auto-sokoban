@@ -164,6 +164,7 @@ class App:
 
     def _handle_event(self, event):
         if   self.screen_state == "home":          self._handle_home(event)
+        elif self.screen_state == "level_select":  self._handle_level_select(event)
 
     def _update(self, dt):
         pass   # rempli dans les tâches suivantes
@@ -171,7 +172,29 @@ class App:
     def _draw(self):
         self.screen.fill(FOND)
         if   self.screen_state == "home":          self._draw_home()
+        elif self.screen_state == "level_select":  self._draw_level_select()
         pygame.display.flip()
+
+    # ── Sélection de niveau ─────────────────────────────────────────
+    def _draw_level_select(self):
+        label = "Mode Joueur" if self.mode == "joueur" else "Mode Solver"
+        self._blit_centered(self.font_lg, f"Choisir un niveau — {label}", TEXTE_C, 150)
+        for i in range(1, 6):
+            bx = WINDOW_W // 2 - 270 + (i - 1) * 135
+            Button(bx, 270, 110, 65, str(i), self.font_lg).draw(self.screen)
+        Button(30, 30, 120, 44, "< Retour", self.font_sm).draw(self.screen)
+
+    def _handle_level_select(self, event):
+        if Button(30, 30, 120, 44, "< Retour", self.font_sm).clicked(event):
+            self.show_home()
+            return
+        for i in range(1, 6):
+            bx = WINDOW_W // 2 - 270 + (i - 1) * 135
+            if Button(bx, 270, 110, 65, str(i), self.font_lg).clicked(event):
+                if self.mode == "joueur":
+                    self.show_game(i)
+                else:
+                    self.show_solver(i)
 
     # ── Accueil ─────────────────────────────────────────────────────
     def _draw_home(self):

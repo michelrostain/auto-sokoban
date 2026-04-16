@@ -14,8 +14,8 @@ from build_game import (
 )
 
 # ── Constantes ──────────────────────────────────────────────────────
-WINDOW_W, WINDOW_H = 1800, 1320
-SPLIT_X    = 1080         # séparation gauche/droite en mode Solver
+WINDOW_W, WINDOW_H = 1200, 880
+SPLIT_X    = 720
 SCORES_FILE = "scores.json"
 
 # Couleurs
@@ -54,7 +54,7 @@ class Button:
 
     def draw(self, surface):
         color = BTN_HOVER_C if self.rect.collidepoint(pygame.mouse.get_pos()) else BTN_C
-        pygame.draw.rect(surface, color, self.rect, border_radius=20)
+        pygame.draw.rect(surface, color, self.rect, border_radius=14)
         surf = self.font.render(self.text, True, TEXTE_C)
         surface.blit(surf, surf.get_rect(center=self.rect.center))
 
@@ -67,7 +67,7 @@ class Button:
 # ── Slider ──────────────────────────────────────────────────────────
 class Slider:
     def __init__(self, x, y, w, min_val, max_val, initial, font):
-        self.track    = pygame.Rect(x, y, w, 16)
+        self.track    = pygame.Rect(x, y, w, 11)
         self.min_val  = min_val
         self.max_val  = max_val
         self.value    = initial
@@ -80,17 +80,17 @@ class Slider:
         return int(self.track.x + ratio * self.track.w)
 
     def draw(self, surface):
-        pygame.draw.rect(surface, BTN_C, self.track, border_radius=8)
+        pygame.draw.rect(surface, BTN_C, self.track, border_radius=5)
         hx = self.handle_x
         pygame.draw.rect(surface, ACCENT_C,
-                         pygame.Rect(hx - 16, self.track.y - 12, 32, 40),
-                         border_radius=8)
+                         pygame.Rect(hx - 11, self.track.y - 8, 22, 27),
+                         border_radius=5)
         label = self.font.render(f"Vitesse : {self.value} coup/s", True, TEXTE_C)
-        surface.blit(label, (self.track.x, self.track.y - 56))
+        surface.blit(label, (self.track.x, self.track.y - 37))
 
     def handle_event(self, event):
         hx = self.handle_x
-        handle_rect = pygame.Rect(hx - 16, self.track.y - 12, 32, 40)
+        handle_rect = pygame.Rect(hx - 11, self.track.y - 8, 22, 27)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if handle_rect.collidepoint(event.pos) or self.track.collidepoint(event.pos):
                 self.dragging = True
@@ -113,16 +113,14 @@ class App:
         self.screen       = pygame.display.set_mode((WINDOW_W, WINDOW_H))
         pygame.display.set_caption("Sokoban")
         self.clock_pygame = pygame.time.Clock()
-        self.font         = pygame.font.SysFont("DejaVu Sans Mono", 44)
-        self.font_lg      = pygame.font.SysFont("DejaVu Sans Mono", 64, bold=True)
-        self.font_sm      = pygame.font.SysFont("DejaVu Sans Mono", 36)
+        self.font         = pygame.font.SysFont("DejaVu Sans Mono", 29)
+        self.font_lg      = pygame.font.SysFont("DejaVu Sans Mono", 43, bold=True)
+        self.font_sm      = pygame.font.SysFont("DejaVu Sans Mono", 24)
 
-        # Navigation
         self.screen_state = "home"
         self.mode         = None
         self.niveau       = None
 
-        # Mode Joueur
         self.matrice           = None
         self.matrice_originale = None
         self.historique        = []
@@ -131,7 +129,6 @@ class App:
         self.elapsed_victory   = 0.0
         self.input_text        = ""
 
-        # Mode Solver
         self.solver_algo         = "BFS"
         self.solver_thread       = None
         self.solver_stop         = False
@@ -142,7 +139,6 @@ class App:
         self.matrice_solver_init = None
         self.matrice_base        = None
 
-        # Replay
         self.replay_active = False
         self.replay_index  = 0
         self.replay_timer  = 0
@@ -198,53 +194,46 @@ class App:
 
     # ── Solver ──────────────────────────────────────────────────────
     def _draw_solver(self):
-        RX = SPLIT_X + 40
+        RX = SPLIT_X + 27
 
-        # Grille (panneau gauche)
-        cell, ox, oy = self._grid_params(self.matrice, SPLIT_X - 20, WINDOW_H - 40)
-        self._draw_grid(self.matrice, ox + 10, oy + 20, cell)
+        cell, ox, oy = self._grid_params(self.matrice, SPLIT_X - 13, WINDOW_H - 27)
+        self._draw_grid(self.matrice, ox + 7, oy + 13, cell)
 
-        # Séparateur
-        pygame.draw.line(self.screen, MUR_C, (SPLIT_X, 0), (SPLIT_X, WINDOW_H), 4)
+        pygame.draw.line(self.screen, MUR_C, (SPLIT_X, 0), (SPLIT_X, WINDOW_H), 3)
 
-        # Titre
         self.screen.blit(
-            self.font_sm.render("Algorithme :", True, TEXTE2_C), (RX, 70))
+            self.font_sm.render("Algorithme :", True, TEXTE2_C), (RX, 47))
 
-        # Boutons algo
         for i, algo in enumerate(("BFS", "DFS", "Astar")):
             label = ALGO_LABELS[algo]
-            btn = Button(RX, 130 + i * 130, 480, 100, label, self.font)
+            btn = Button(RX, 87 + i * 87, 320, 67, label, self.font)
             if self.solver_algo == algo:
                 pygame.draw.rect(self.screen, ACCENT_C,
-                                 pygame.Rect(RX - 6, 130 + i * 130 - 6, 492, 112),
-                                 4, border_radius=24)
+                                 pygame.Rect(RX - 4, 87 + i * 87 - 4, 328, 75),
+                                 3, border_radius=16)
             btn.draw(self.screen)
 
-        # Bouton Réinitialiser — juste sous A*, écart légèrement plus grand
+        # Réinitialiser — juste sous A* avec un peu plus d'espace
         if self.solver_status in ("done", "no_solution"):
-            Button(RX, 530, 480, 92, "Réinitialiser", self.font_sm).draw(self.screen)
+            Button(RX, 360, 320, 61, "Réinitialiser", self.font_sm).draw(self.screen)
 
-        # Curseur vitesse
         if self.speed_slider:
             self.speed_slider.draw(self.screen)
 
-        # Zone statut / résolution
         if self.solver_status == "idle":
-            Button(RX, 940, 480, 110, "Résoudre", self.font).draw(self.screen)
+            Button(RX, 627, 320, 73, "Résoudre", self.font).draw(self.screen)
         elif self.solver_status == "running":
             self.screen.blit(
-                self.font.render("Calcul en cours...", True, TEXTE2_C), (RX, 950))
+                self.font.render("Calcul en cours...", True, TEXTE2_C), (RX, 633))
         else:
             self._draw_solver_stats(RX)
 
-        # Bouton retour
-        Button(RX, WINDOW_H - 140, 480, 100, "< Accueil", self.font_sm).draw(self.screen)
+        Button(RX, WINDOW_H - 93, 320, 67, "< Accueil", self.font_sm).draw(self.screen)
 
     def _draw_solver_stats(self, rx):
         if self.solver_status == "no_solution":
             self.screen.blit(
-                self.font.render("Aucune solution :(", True, CAISSE_C), (rx, 940))
+                self.font.render("Aucune solution :(", True, CAISSE_C), (rx, 627))
         else:
             coups = len(self.solver_chemin) - 1 if self.solver_chemin else 0
             for i, line in enumerate([
@@ -253,29 +242,29 @@ class App:
                 f"Sommets  : {self.solver_visites}",
             ]):
                 self.screen.blit(
-                    self.font_sm.render(line, True, TEXTE_C), (rx, 940 + i * 60))
+                    self.font_sm.render(line, True, TEXTE_C), (rx, 627 + i * 40))
 
     def _handle_solver(self, event):
-        RX = SPLIT_X + 40
+        RX = SPLIT_X + 27
 
-        if Button(RX, WINDOW_H - 140, 480, 100, "< Accueil", self.font_sm).clicked(event):
+        if Button(RX, WINDOW_H - 93, 320, 67, "< Accueil", self.font_sm).clicked(event):
             self.solver_stop = True
             self.show_home()
             return
 
         for i, algo in enumerate(("BFS", "DFS", "Astar")):
             label = ALGO_LABELS[algo]
-            if Button(RX, 130 + i * 130, 480, 100, label, self.font).clicked(event):
+            if Button(RX, 87 + i * 87, 320, 67, label, self.font).clicked(event):
                 self.solver_algo = algo
 
         if self.speed_slider:
             self.speed_slider.handle_event(event)
 
         if self.solver_status == "idle":
-            if Button(RX, 940, 480, 110, "Résoudre", self.font).clicked(event):
+            if Button(RX, 627, 320, 73, "Résoudre", self.font).clicked(event):
                 self._start_solver()
         elif self.solver_status in ("done", "no_solution"):
-            if Button(RX, 530, 480, 92, "Réinitialiser", self.font_sm).clicked(event):
+            if Button(RX, 360, 320, 61, "Réinitialiser", self.font_sm).clicked(event):
                 self._reset_solver()
 
     def _start_solver(self):
@@ -317,21 +306,21 @@ class App:
     # ── Victoire ────────────────────────────────────────────────────
     def _draw_victory(self):
         m, s = divmod(int(self.elapsed_victory), 60)
-        self._blit_centered(self.font_lg, "Bravo !", CIBLE_C, 280)
+        self._blit_centered(self.font_lg, "Bravo !", CIBLE_C, 187)
         self._blit_centered(self.font,
             f"Niveau {self.niveau}  —  {m:02d}:{s:02d}  —  {self.coups} coups",
-            TEXTE_C, 420)
+            TEXTE_C, 280)
         lbl = self.font_sm.render("Ton prénom (12 car. max) :", True, TEXTE2_C)
-        self.screen.blit(lbl, lbl.get_rect(center=(WINDOW_W // 2, 590)))
-        field = pygame.Rect(WINDOW_W // 2 - 300, 640, 600, 100)
-        pygame.draw.rect(self.screen, BTN_C, field, border_radius=16)
-        pygame.draw.rect(self.screen, ACCENT_C, field, 4, border_radius=16)
+        self.screen.blit(lbl, lbl.get_rect(center=(WINDOW_W // 2, 393)))
+        field = pygame.Rect(WINDOW_W // 2 - 200, 427, 400, 67)
+        pygame.draw.rect(self.screen, BTN_C, field, border_radius=11)
+        pygame.draw.rect(self.screen, ACCENT_C, field, 3, border_radius=11)
         name_surf = self.font.render(self.input_text + "|", True, TEXTE_C)
         self.screen.blit(name_surf, name_surf.get_rect(center=field.center))
-        Button(WINDOW_W // 2 - 160, 800, 320, 100, "Valider", self.font).draw(self.screen)
+        Button(WINDOW_W // 2 - 107, 533, 213, 67, "Valider", self.font).draw(self.screen)
 
     def _handle_victory(self, event):
-        btn = Button(WINDOW_W // 2 - 160, 800, 320, 100, "Valider", self.font)
+        btn = Button(WINDOW_W // 2 - 107, 533, 213, 67, "Valider", self.font)
         if btn.clicked(event) and self.input_text.strip():
             self._save_score()
             self.show_home()
@@ -363,24 +352,24 @@ class App:
 
     # ── Jeu ─────────────────────────────────────────────────────────
     def _draw_game(self):
-        cell, ox, oy = self._grid_params(self.matrice, 1360, WINDOW_H - 40)
-        self._draw_grid(self.matrice, ox, oy + 20, cell)
+        cell, ox, oy = self._grid_params(self.matrice, 907, WINDOW_H - 27)
+        self._draw_grid(self.matrice, ox, oy + 13, cell)
 
-        hx = 1400
+        hx = 933
         self.screen.blit(
-            self.font_sm.render(f"Niveau {self.niveau}", True, TEXTE2_C), (hx, 80))
+            self.font_sm.render(f"Niveau {self.niveau}", True, TEXTE2_C), (hx, 53))
         self.screen.blit(
-            self.font_lg.render(self._time_str(), True, TEXTE_C), (hx, 140))
+            self.font_lg.render(self._time_str(), True, TEXTE_C), (hx, 93))
         self.screen.blit(
-            self.font.render(f"{self.coups} coups", True, TEXTE_C), (hx, 230))
-        Button(hx, 920, 320, 100, "Undo", self.font).draw(self.screen)
-        Button(hx, 1060, 320, 100, "< Accueil", self.font_sm).draw(self.screen)
+            self.font.render(f"{self.coups} coups", True, TEXTE_C), (hx, 153))
+        Button(hx, 613, 213, 67, "Undo", self.font).draw(self.screen)
+        Button(hx, 707, 213, 67, "< Accueil", self.font_sm).draw(self.screen)
 
     def _handle_game(self, event):
-        if Button(1400, 1060, 320, 100, "< Accueil", self.font_sm).clicked(event):
+        if Button(933, 707, 213, 67, "< Accueil", self.font_sm).clicked(event):
             self.show_home()
             return
-        if Button(1400, 920, 320, 100, "Undo", self.font).clicked(event):
+        if Button(933, 613, 213, 67, "Undo", self.font).clicked(event):
             self._do_undo()
             return
         if event.type == pygame.KEYDOWN:
@@ -412,19 +401,19 @@ class App:
     # ── Sélection de niveau ─────────────────────────────────────────
     def _draw_level_select(self):
         label = "Mode Joueur" if self.mode == "joueur" else "Mode Solver"
-        self._blit_centered(self.font_lg, f"Choisir un niveau — {label}", TEXTE_C, 300)
+        self._blit_centered(self.font_lg, f"Choisir un niveau — {label}", TEXTE_C, 200)
         for i in range(1, 6):
-            bx = WINDOW_W // 2 - 540 + (i - 1) * 270
-            Button(bx, 540, 220, 130, str(i), self.font_lg).draw(self.screen)
-        Button(60, 60, 240, 88, "< Retour", self.font_sm).draw(self.screen)
+            bx = WINDOW_W // 2 - 360 + (i - 1) * 180
+            Button(bx, 360, 147, 87, str(i), self.font_lg).draw(self.screen)
+        Button(40, 40, 160, 59, "< Retour", self.font_sm).draw(self.screen)
 
     def _handle_level_select(self, event):
-        if Button(60, 60, 240, 88, "< Retour", self.font_sm).clicked(event):
+        if Button(40, 40, 160, 59, "< Retour", self.font_sm).clicked(event):
             self.show_home()
             return
         for i in range(1, 6):
-            bx = WINDOW_W // 2 - 540 + (i - 1) * 270
-            if Button(bx, 540, 220, 130, str(i), self.font_lg).clicked(event):
+            bx = WINDOW_W // 2 - 360 + (i - 1) * 180
+            if Button(bx, 360, 147, 87, str(i), self.font_lg).clicked(event):
                 if self.mode == "joueur":
                     self.show_game(i)
                 else:
@@ -432,48 +421,48 @@ class App:
 
     # ── Accueil ─────────────────────────────────────────────────────
     def _draw_home(self):
-        self._blit_centered(self.font_lg, "SOKOBAN", ACCENT_C, 320)
-        Button(WINDOW_W//2 - 240, 520, 480, 110, "Joueur", self.font).draw(self.screen)
-        Button(WINDOW_W//2 - 240, 670, 480, 110, "Solver", self.font).draw(self.screen)
-        Button(WINDOW_W//2 - 240, 820, 480, 110, "Scores", self.font).draw(self.screen)
+        self._blit_centered(self.font_lg, "SOKOBAN", ACCENT_C, 213)
+        Button(WINDOW_W//2 - 160, 347, 320, 73, "Joueur", self.font).draw(self.screen)
+        Button(WINDOW_W//2 - 160, 447, 320, 73, "Solver", self.font).draw(self.screen)
+        Button(WINDOW_W//2 - 160, 547, 320, 73, "Scores", self.font).draw(self.screen)
 
     def _handle_home(self, event):
-        if Button(WINDOW_W//2 - 240, 520, 480, 110, "Joueur", self.font).clicked(event):
+        if Button(WINDOW_W//2 - 160, 347, 320, 73, "Joueur", self.font).clicked(event):
             self.show_level_select("joueur")
-        elif Button(WINDOW_W//2 - 240, 670, 480, 110, "Solver", self.font).clicked(event):
+        elif Button(WINDOW_W//2 - 160, 447, 320, 73, "Solver", self.font).clicked(event):
             self.show_level_select("solver")
-        elif Button(WINDOW_W//2 - 240, 820, 480, 110, "Scores", self.font).clicked(event):
+        elif Button(WINDOW_W//2 - 160, 547, 320, 73, "Scores", self.font).clicked(event):
             self.screen_state = "scores"
 
     # ── Scores ──────────────────────────────────────────────────────
     def _draw_scores(self):
-        self._blit_centered(self.font_lg, "Scores", ACCENT_C, 140)
+        self._blit_centered(self.font_lg, "Scores", ACCENT_C, 93)
         scores = []
         if os.path.exists(SCORES_FILE):
             with open(SCORES_FILE, "r", encoding="utf-8") as f:
                 scores = json.load(f)
 
         if not scores:
-            self._blit_centered(self.font, "Aucun score enregistré.", TEXTE2_C, 600)
+            self._blit_centered(self.font, "Aucun score enregistré.", TEXTE2_C, 400)
         else:
-            cols = [240, 640, 1000, 1320]
+            cols = [160, 427, 667, 880]
             headers = ["Prénom", "Niveau", "Temps", "Coups"]
             for cx, h in zip(cols, headers):
-                self.screen.blit(self.font_sm.render(h, True, TEXTE2_C), (cx, 280))
+                self.screen.blit(self.font_sm.render(h, True, TEXTE2_C), (cx, 187))
             pygame.draw.line(self.screen, MUR_C,
-                             (200, 330), (WINDOW_W - 200, 330), 2)
+                             (133, 220), (WINDOW_W - 133, 220), 2)
             for i, entry in enumerate(scores[-14:]):
-                y = 360 + i * 64
+                y = 240 + i * 43
                 color = TEXTE_C if i % 2 == 0 else TEXTE2_C
                 for cx, key in zip(cols, ["prenom", "niveau", "temps", "coups"]):
                     self.screen.blit(
                         self.font_sm.render(str(entry.get(key, "")), True, color),
                         (cx, y))
 
-        Button(60, 60, 240, 88, "< Retour", self.font_sm).draw(self.screen)
+        Button(40, 40, 160, 59, "< Retour", self.font_sm).draw(self.screen)
 
     def _handle_scores(self, event):
-        if Button(60, 60, 240, 88, "< Retour", self.font_sm).clicked(event):
+        if Button(40, 40, 160, 59, "< Retour", self.font_sm).clicked(event):
             self.screen_state = "home"
 
     # ── Transitions d'écran ─────────────────────────────────────────
@@ -510,7 +499,7 @@ class App:
         self.replay_index        = 0
         self.replay_timer        = 0
         self.speed_slider        = Slider(
-            SPLIT_X + 40, 780, 480, 1, 10, 3, self.font_sm
+            SPLIT_X + 27, 520, 320, 1, 10, 3, self.font_sm
         )
         self.screen_state = "solver"
 

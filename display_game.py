@@ -241,6 +241,33 @@ class App:
         surf = font.render(text, True, color)
         self.screen.blit(surf, surf.get_rect(center=(WINDOW_W // 2, y)))
 
+    def _grid_params(self, matrice, max_w, max_h):
+        """Retourne (cell_size, origin_x, origin_y) pour centrer la grille."""
+        rows = len(matrice)
+        cols = len(matrice[0])
+        cell_size = min(max_w // cols, max_h // rows)
+        ox = (max_w - cols * cell_size) // 2
+        oy = (max_h - rows * cell_size) // 2
+        return cell_size, ox, oy
+
+    def _draw_grid(self, matrice, origin_x, origin_y, cell_size):
+        for y, row in enumerate(matrice):
+            for x, val in enumerate(row):
+                rect = pygame.Rect(
+                    origin_x + x * cell_size,
+                    origin_y + y * cell_size,
+                    cell_size, cell_size,
+                )
+                color = CELL_COLORS.get(val, SOL_C)
+                pygame.draw.rect(self.screen, color, rect)
+                pygame.draw.rect(self.screen, FOND, rect, 1)   # séparateur
+                # Joueur = disque centré
+                if val in (JOUEUR, JOUEUR_SUR_CIBLE):
+                    cx = origin_x + x * cell_size + cell_size // 2
+                    cy = origin_y + y * cell_size + cell_size // 2
+                    pygame.draw.circle(self.screen, JOUEUR_C, (cx, cy),
+                                       cell_size // 3)
+
 
 if __name__ == "__main__":
     App().run()

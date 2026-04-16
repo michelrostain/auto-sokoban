@@ -166,6 +166,7 @@ class App:
         if   self.screen_state == "home":          self._handle_home(event)
         elif self.screen_state == "level_select":  self._handle_level_select(event)
         elif self.screen_state == "game":          self._handle_game(event)
+        elif self.screen_state == "victory":       self._handle_victory(event)
 
     def _update(self, dt):
         pass   # rempli dans les tâches suivantes
@@ -175,7 +176,55 @@ class App:
         if   self.screen_state == "home":          self._draw_home()
         elif self.screen_state == "level_select":  self._draw_level_select()
         elif self.screen_state == "game":          self._draw_game()
+        elif self.screen_state == "victory":       self._draw_victory()
         pygame.display.flip()
+
+    # ── Victoire ────────────────────────────────────────────────────
+    def _draw_victory(self):
+        m, s = divmod(int(self.elapsed_victory), 60)
+        self._blit_centered(self.font_lg, "Bravo !", CIBLE_C, 140)
+        self._blit_centered(self.font,
+            f"Niveau {self.niveau}  —  {m:02d}:{s:02d}  —  {self.coups} coups",
+            TEXTE_C, 210)
+        lbl = self.font_sm.render("Ton prénom (12 car. max) :", True, TEXTE2_C)
+        self.screen.blit(lbl, lbl.get_rect(center=(WINDOW_W // 2, 295)))
+        field = pygame.Rect(WINDOW_W // 2 - 150, 320, 300, 50)
+        pygame.draw.rect(self.screen, BTN_C, field, border_radius=8)
+        pygame.draw.rect(self.screen, ACCENT_C, field, 2, border_radius=8)
+        name_surf = self.font.render(self.input_text + "|", True, TEXTE_C)
+        self.screen.blit(name_surf, name_surf.get_rect(center=field.center))
+        Button(WINDOW_W // 2 - 80, 400, 160, 50, "Valider", self.font).draw(self.screen)
+
+    def _handle_victory(self, event):
+        btn = Button(WINDOW_W // 2 - 80, 400, 160, 50, "Valider", self.font)
+        if btn.clicked(event) and self.input_text.strip():
+            self._save_score()
+            self.show_home()
+            return
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_BACKSPACE:
+                self.input_text = self.input_text[:-1]
+            elif event.key == pygame.K_RETURN and self.input_text.strip():
+                self._save_score()
+                self.show_home()
+            elif event.unicode and len(self.input_text) < 12:
+                self.input_text += event.unicode
+
+    def _save_score(self):
+        m, s = divmod(int(self.elapsed_victory), 60)
+        entry = {
+            "prenom": self.input_text.strip(),
+            "niveau": self.niveau,
+            "temps":  f"{m:02d}:{s:02d}",
+            "coups":  self.coups,
+        }
+        scores = []
+        if os.path.exists(SCORES_FILE):
+            with open(SCORES_FILE, "r", encoding="utf-8") as f:
+                scores = json.load(f)
+        scores.append(entry)
+        with open(SCORES_FILE, "w", encoding="utf-8") as f:
+            json.dump(scores, f, ensure_ascii=False, indent=2)
 
     # ── Jeu ─────────────────────────────────────────────────────────
     def _draw_game(self):

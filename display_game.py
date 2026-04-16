@@ -165,6 +165,7 @@ class App:
     def _handle_event(self, event):
         if   self.screen_state == "home":          self._handle_home(event)
         elif self.screen_state == "level_select":  self._handle_level_select(event)
+        elif self.screen_state == "game":          self._handle_game(event)
 
     def _update(self, dt):
         pass   # rempli dans les tâches suivantes
@@ -173,7 +174,58 @@ class App:
         self.screen.fill(FOND)
         if   self.screen_state == "home":          self._draw_home()
         elif self.screen_state == "level_select":  self._draw_level_select()
+        elif self.screen_state == "game":          self._draw_game()
         pygame.display.flip()
+
+    # ── Jeu ─────────────────────────────────────────────────────────
+    def _draw_game(self):
+        # Grille centrée dans les 680 premiers pixels
+        cell, ox, oy = self._grid_params(self.matrice, 680, WINDOW_H - 20)
+        self._draw_grid(self.matrice, ox, oy + 10, cell)
+
+        # HUD droite
+        hx = 700
+        self.screen.blit(
+            self.font_sm.render(f"Niveau {self.niveau}", True, TEXTE2_C), (hx, 40))
+        self.screen.blit(
+            self.font_lg.render(self._time_str(), True, TEXTE_C), (hx, 70))
+        self.screen.blit(
+            self.font.render(f"{self.coups} coups", True, TEXTE_C), (hx, 115))
+        Button(hx, 460, 160, 50, "Undo", self.font).draw(self.screen)
+        Button(hx, 530, 160, 50, "< Accueil", self.font_sm).draw(self.screen)
+
+    def _handle_game(self, event):
+        if Button(700, 530, 160, 50, "< Accueil", self.font_sm).clicked(event):
+            self.show_home()
+            return
+        if Button(700, 460, 160, 50, "Undo", self.font).clicked(event):
+            self._do_undo()
+            return
+        if event.type == pygame.KEYDOWN:
+            key_map = {
+                pygame.K_UP:    HAUT,
+                pygame.K_DOWN:  BAS,
+                pygame.K_LEFT:  GAUCHE,
+                pygame.K_RIGHT: DROITE,
+            }
+            if event.key in key_map:
+                self._do_move(key_map[event.key])
+
+    def _do_move(self, direction):
+        if mouvement_valide(self.matrice, direction):
+            self.historique.append(copy.deepcopy(self.matrice))
+            deplacer_joueur(self.matrice, direction)
+            self.coups += 1
+            if est_gagne(get_etat(self.matrice), self.matrice_originale):
+                self.elapsed_victory = time.time() - self.start_time
+                self.show_victory()
+
+    def _do_undo(self):
+        prev = annuler_mouvement(self.historique)
+        if prev is not None:
+            self.matrice = prev
+            if self.coups > 0:
+                self.coups -= 1
 
     # ── Sélection de niveau ─────────────────────────────────────────
     def _draw_level_select(self):

@@ -170,7 +170,21 @@ class App:
         elif self.screen_state == "solver":        self._handle_solver(event)
 
     def _update(self, dt):
-        pass   # rempli dans les tâches suivantes
+        if (self.screen_state == "solver"
+                and self.replay_active
+                and self.solver_chemin):
+            speed    = self.speed_slider.value if self.speed_slider else 3
+            interval = 1000 / speed   # ms entre deux étapes
+            self.replay_timer += dt
+            if self.replay_timer >= interval:
+                self.replay_timer -= interval
+                nxt = self.replay_index + 1
+                if nxt < len(self.solver_chemin):
+                    self.replay_index = nxt
+                    self.matrice = self._reconstruct_matrice(
+                        self.solver_chemin[nxt])
+                else:
+                    self.replay_active = False
 
     def _draw(self):
         self.screen.fill(FOND)
@@ -255,6 +269,32 @@ class App:
         if self.solver_status == "idle":
             if Button(RX, 470, 240, 55, "Résoudre", self.font).clicked(event):
                 self._start_solver()
+
+    def _start_solver(self):
+        self.solver_stop   = False
+        self.solver_status = "running"
+        self.solver_thread = threading.Thread(
+            target=self._solver_worker, daemon=True)
+        self.solver_thread.start()
+
+    def _solver_worker(self):
+        chemin, etapes, nb_visites = solveur(
+            copy.deepcopy(self.matrice_solver_init), self.solver_algo
+        )
+        if self.solver_stop:
+            return
+        self.solver_etapes  = etapes
+        self.solver_visites = nb_visites
+        if chemin:
+            self.solver_chemin = chemin
+            self.solver_status = "done"
+            self.replay_index  = 0
+            self.replay_timer  = 0
+            self.matrice       = self._reconstruct_matrice(chemin[0])
+            self.replay_active = True
+        else:
+            self.solver_chemin = None
+            self.solver_status = "no_solution"
 
     # ── Victoire ────────────────────────────────────────────────────
     def _draw_victory(self):

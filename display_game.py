@@ -163,14 +163,27 @@ class App:
             pygame.display.flip()
 
     def _handle_event(self, event):
-        pass   # rempli dans les tâches suivantes
+        if   self.screen_state == "home":          self._handle_home(event)
 
     def _update(self, dt):
         pass   # rempli dans les tâches suivantes
 
     def _draw(self):
         self.screen.fill(FOND)
+        if   self.screen_state == "home":          self._draw_home()
         pygame.display.flip()
+
+    # ── Accueil ─────────────────────────────────────────────────────
+    def _draw_home(self):
+        self._blit_centered(self.font_lg, "SOKOBAN", ACCENT_C, 180)
+        Button(WINDOW_W//2 - 120, 290, 240, 55, "Joueur", self.font).draw(self.screen)
+        Button(WINDOW_W//2 - 120, 370, 240, 55, "Solver", self.font).draw(self.screen)
+
+    def _handle_home(self, event):
+        if Button(WINDOW_W//2 - 120, 290, 240, 55, "Joueur", self.font).clicked(event):
+            self.show_level_select("joueur")
+        elif Button(WINDOW_W//2 - 120, 370, 240, 55, "Solver", self.font).clicked(event):
+            self.show_level_select("solver")
 
     # ── Transitions d'écran (stubs) ─────────────────────────────────
     def show_home(self):

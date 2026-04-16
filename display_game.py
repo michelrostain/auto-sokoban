@@ -507,20 +507,125 @@ class App:
     def _draw_grid(self, matrice, origin_x, origin_y, cell_size):
         for y, row in enumerate(matrice):
             for x, val in enumerate(row):
-                rect = pygame.Rect(
-                    origin_x + x * cell_size,
-                    origin_y + y * cell_size,
-                    cell_size, cell_size,
-                )
-                color = CELL_COLORS.get(val, SOL_C)
-                pygame.draw.rect(self.screen, color, rect)
-                pygame.draw.rect(self.screen, FOND, rect, 1)   # séparateur
-                # Joueur = disque centré
-                if val in (JOUEUR, JOUEUR_SUR_CIBLE):
-                    cx = origin_x + x * cell_size + cell_size // 2
-                    cy = origin_y + y * cell_size + cell_size // 2
-                    pygame.draw.circle(self.screen, JOUEUR_C, (cx, cy),
-                                       cell_size // 3)
+                rx = origin_x + x * cell_size
+                ry = origin_y + y * cell_size
+                self._draw_cell_sprite(val, rx, ry, cell_size)
+
+    # ── Sprites programmatiques ─────────────────────────────────────
+    def _draw_cell_sprite(self, val, rx, ry, size):
+        # Fond
+        bg = FOND if val == MUR else SOL_C
+        pygame.draw.rect(self.screen, bg, pygame.Rect(rx, ry, size, size))
+
+        if val == MUR:
+            self._sprite_wall(rx, ry, size)
+        elif val == CIBLE:
+            self._sprite_target(rx, ry, size)
+        elif val == CAISSE:
+            self._sprite_box(rx, ry, size, CAISSE_C)
+        elif val == CAISSE_SUR_CIBLE:
+            self._sprite_target(rx, ry, size)
+            self._sprite_box(rx, ry, size, CAISSE_CIBLE_C)
+        elif val == JOUEUR:
+            self._sprite_player(rx, ry, size)
+        elif val == JOUEUR_SUR_CIBLE:
+            self._sprite_target(rx, ry, size)
+            self._sprite_player(rx, ry, size)
+
+        # Bordure discrète entre cases
+        pygame.draw.rect(self.screen, FOND,
+                         pygame.Rect(rx, ry, size, size), 1)
+
+    def _sprite_wall(self, rx, ry, size):
+        """Mur avec motif de briques."""
+        base = MUR_C
+        pygame.draw.rect(self.screen, base, pygame.Rect(rx, ry, size, size))
+        light = tuple(min(255, c + 30) for c in base)
+        dark  = tuple(max(0,   c - 30) for c in base)
+        h = max(4, size // 3)
+        for row in range(3):
+            y0 = ry + row * h
+            # ligne horizontale
+            pygame.draw.line(self.screen, dark, (rx, y0), (rx + size, y0), 1)
+            # joint vertical décalé
+            offset = (size // 4) if row % 2 == 0 else (3 * size // 4)
+            pygame.draw.line(self.screen, dark,
+                             (rx + offset, y0), (rx + offset, y0 + h), 1)
+        # reflet en haut à gauche
+        pygame.draw.line(self.screen, light, (rx + 1, ry + 1), (rx + size - 2, ry + 1), 1)
+        pygame.draw.line(self.screen, light, (rx + 1, ry + 1), (rx + 1, ry + size - 2), 1)
+
+    def _sprite_target(self, rx, ry, size):
+        """Cible : étoile à 4 branches sur le sol."""
+        cx, cy = rx + size // 2, ry + size // 2
+        r = max(4, size // 3)
+        d = max(3, int(r * 0.65))
+        col = CIBLE_C
+        thick = max(2, size // 20)
+        # croix droite
+        pygame.draw.line(self.screen, col, (cx - r, cy), (cx + r, cy), thick)
+        pygame.draw.line(self.screen, col, (cx, cy - r), (cx, cy + r), thick)
+        # croix diagonale
+        pygame.draw.line(self.screen, col, (cx - d, cy - d), (cx + d, cy + d), thick)
+        pygame.draw.line(self.screen, col, (cx + d, cy - d), (cx - d, cy + d), thick)
+        # point central
+        pygame.draw.circle(self.screen, col, (cx, cy), max(2, size // 12))
+
+    def _sprite_box(self, rx, ry, size, color):
+        """Caisse avec relief 3D et croix centrale."""
+        pad  = max(3, size // 8)
+        inner = pygame.Rect(rx + pad, ry + pad, size - 2 * pad, size - 2 * pad)
+        pygame.draw.rect(self.screen, color, inner, border_radius=4)
+
+        light  = tuple(min(255, c + 55) for c in color)
+        shadow = tuple(max(0,   c - 55) for c in color)
+        thick  = max(1, size // 20)
+
+        # Reflets (haut + gauche)
+        pygame.draw.line(self.screen, light,
+                         (rx + pad, ry + pad), (rx + size - pad, ry + pad), thick)
+        pygame.draw.line(self.screen, light,
+                         (rx + pad, ry + pad), (rx + pad, ry + size - pad), thick)
+        # Ombres (bas + droite)
+        pygame.draw.line(self.screen, shadow,
+                         (rx + pad, ry + size - pad),
+                         (rx + size - pad, ry + size - pad), thick)
+        pygame.draw.line(self.screen, shadow,
+                         (rx + size - pad, ry + pad),
+                         (rx + size - pad, ry + size - pad), thick)
+
+        # Croix au centre
+        cx, cy = rx + size // 2, ry + size // 2
+        arm = max(3, (size - 2 * pad) // 4)
+        pygame.draw.line(self.screen, shadow, (cx - arm, cy), (cx + arm, cy), thick)
+        pygame.draw.line(self.screen, shadow, (cx, cy - arm), (cx, cy + arm), thick)
+
+    def _sprite_player(self, rx, ry, size):
+        """Personnage : tête ronde avec yeux et sourire."""
+        cx, cy = rx + size // 2, ry + size // 2
+        r = max(5, size // 3)
+
+        # Corps (disque)
+        pygame.draw.circle(self.screen, JOUEUR_C, (cx, cy), r)
+        # Contour sombre
+        dark = tuple(max(0, c - 60) for c in JOUEUR_C)
+        pygame.draw.circle(self.screen, dark, (cx, cy), r, max(1, size // 20))
+
+        # Yeux (blancs + pupilles)
+        ey  = cy - r // 4
+        ex1 = cx - r // 3
+        ex2 = cx + r // 3
+        eye_r = max(2, r // 4)
+        for ex in (ex1, ex2):
+            pygame.draw.circle(self.screen, (240, 240, 255), (ex, ey), eye_r)
+            pygame.draw.circle(self.screen, (40, 40, 70),
+                               (ex, ey), max(1, eye_r // 2))
+
+        # Sourire (arc)
+        smile_r = r // 2
+        smile_rect = pygame.Rect(cx - smile_r, cy, smile_r * 2, smile_r)
+        pygame.draw.arc(self.screen, (240, 240, 255),
+                        smile_rect, 3.14159, 0.0, max(1, size // 22))
 
 
 if __name__ == "__main__":

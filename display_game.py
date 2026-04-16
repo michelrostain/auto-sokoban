@@ -167,6 +167,7 @@ class App:
         elif self.screen_state == "level_select":  self._handle_level_select(event)
         elif self.screen_state == "game":          self._handle_game(event)
         elif self.screen_state == "victory":       self._handle_victory(event)
+        elif self.screen_state == "solver":        self._handle_solver(event)
 
     def _update(self, dt):
         pass   # rempli dans les tâches suivantes
@@ -177,7 +178,83 @@ class App:
         elif self.screen_state == "level_select":  self._draw_level_select()
         elif self.screen_state == "game":          self._draw_game()
         elif self.screen_state == "victory":       self._draw_victory()
+        elif self.screen_state == "solver":        self._draw_solver()
         pygame.display.flip()
+
+    # ── Solver ──────────────────────────────────────────────────────
+    def _draw_solver(self):
+        RX = SPLIT_X + 20
+
+        # Grille (panneau gauche)
+        cell, ox, oy = self._grid_params(self.matrice, SPLIT_X - 10, WINDOW_H - 20)
+        self._draw_grid(self.matrice, ox + 5, oy + 10, cell)
+
+        # Séparateur
+        pygame.draw.line(self.screen, MUR_C, (SPLIT_X, 0), (SPLIT_X, WINDOW_H), 2)
+
+        # Titre panneau droit
+        self.screen.blit(
+            self.font_sm.render("Algorithme :", True, TEXTE2_C), (RX, 35))
+
+        # Boutons algo
+        for i, algo in enumerate(("BFS", "DFS", "Astar")):
+            label = ALGO_LABELS[algo]
+            btn = Button(RX, 65 + i * 65, 240, 50, label, self.font)
+            if self.solver_algo == algo:
+                pygame.draw.rect(self.screen, ACCENT_C,
+                                 pygame.Rect(RX - 3, 65 + i * 65 - 3, 246, 56),
+                                 2, border_radius=12)
+            btn.draw(self.screen)
+
+        # Curseur vitesse
+        if self.speed_slider:
+            self.speed_slider.draw(self.screen)
+
+        # Zone statut / résolution
+        if self.solver_status == "idle":
+            Button(RX, 470, 240, 55, "Résoudre", self.font).draw(self.screen)
+        elif self.solver_status == "running":
+            self.screen.blit(
+                self.font.render("Calcul en cours...", True, TEXTE2_C), (RX, 475))
+        else:
+            self._draw_solver_stats(RX)
+
+        # Bouton retour
+        Button(RX, WINDOW_H - 70, 240, 50, "< Accueil", self.font_sm).draw(self.screen)
+
+    def _draw_solver_stats(self, rx):
+        if self.solver_status == "no_solution":
+            self.screen.blit(
+                self.font.render("Aucune solution :(", True, CAISSE_C), (rx, 470))
+        else:
+            coups = len(self.solver_chemin) - 1 if self.solver_chemin else 0
+            for i, line in enumerate([
+                f"Coups    : {coups}",
+                f"Ops      : {self.solver_etapes}",
+                f"Sommets  : {self.solver_visites}",
+            ]):
+                self.screen.blit(
+                    self.font_sm.render(line, True, TEXTE_C), (rx, 470 + i * 30))
+
+    def _handle_solver(self, event):
+        RX = SPLIT_X + 20
+
+        if Button(RX, WINDOW_H - 70, 240, 50, "< Accueil", self.font_sm).clicked(event):
+            self.solver_stop = True
+            self.show_home()
+            return
+
+        for i, algo in enumerate(("BFS", "DFS", "Astar")):
+            label = ALGO_LABELS[algo]
+            if Button(RX, 65 + i * 65, 240, 50, label, self.font).clicked(event):
+                self.solver_algo = algo
+
+        if self.speed_slider:
+            self.speed_slider.handle_event(event)
+
+        if self.solver_status == "idle":
+            if Button(RX, 470, 240, 55, "Résoudre", self.font).clicked(event):
+                self._start_solver()
 
     # ── Victoire ────────────────────────────────────────────────────
     def _draw_victory(self):

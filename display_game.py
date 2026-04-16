@@ -168,6 +168,7 @@ class App:
         elif self.screen_state == "game":          self._handle_game(event)
         elif self.screen_state == "victory":       self._handle_victory(event)
         elif self.screen_state == "solver":        self._handle_solver(event)
+        elif self.screen_state == "scores":        self._handle_scores(event)
 
     def _update(self, dt):
         if (self.screen_state == "solver"
@@ -193,6 +194,7 @@ class App:
         elif self.screen_state == "game":          self._draw_game()
         elif self.screen_state == "victory":       self._draw_victory()
         elif self.screen_state == "solver":        self._draw_solver()
+        elif self.screen_state == "scores":        self._draw_scores()
         pygame.display.flip()
 
     # ── Solver ──────────────────────────────────────────────────────
@@ -232,6 +234,7 @@ class App:
                 self.font.render("Calcul en cours...", True, TEXTE2_C), (RX, 475))
         else:
             self._draw_solver_stats(RX)
+            Button(RX, 570, 240, 46, "Réinitialiser", self.font_sm).draw(self.screen)
 
         # Bouton retour
         Button(RX, WINDOW_H - 70, 240, 50, "< Accueil", self.font_sm).draw(self.screen)
@@ -269,6 +272,9 @@ class App:
         if self.solver_status == "idle":
             if Button(RX, 470, 240, 55, "Résoudre", self.font).clicked(event):
                 self._start_solver()
+        elif self.solver_status in ("done", "no_solution"):
+            if Button(RX, 570, 240, 46, "Réinitialiser", self.font_sm).clicked(event):
+                self._reset_solver()
 
     def _start_solver(self):
         self.solver_stop   = False
@@ -295,6 +301,17 @@ class App:
         else:
             self.solver_chemin = None
             self.solver_status = "no_solution"
+
+    def _reset_solver(self):
+        """Remet la grille à zéro pour relancer avec un autre algo."""
+        self.matrice       = copy.deepcopy(self.matrice_solver_init)
+        self.solver_status = "idle"
+        self.solver_chemin = None
+        self.solver_etapes = 0
+        self.solver_visites = 0
+        self.replay_active = False
+        self.replay_index  = 0
+        self.replay_timer  = 0
 
     # ── Victoire ────────────────────────────────────────────────────
     def _draw_victory(self):
@@ -416,15 +433,53 @@ class App:
 
     # ── Accueil ─────────────────────────────────────────────────────
     def _draw_home(self):
-        self._blit_centered(self.font_lg, "SOKOBAN", ACCENT_C, 180)
-        Button(WINDOW_W//2 - 120, 290, 240, 55, "Joueur", self.font).draw(self.screen)
-        Button(WINDOW_W//2 - 120, 370, 240, 55, "Solver", self.font).draw(self.screen)
+        self._blit_centered(self.font_lg, "SOKOBAN", ACCENT_C, 160)
+        Button(WINDOW_W//2 - 120, 260, 240, 55, "Joueur", self.font).draw(self.screen)
+        Button(WINDOW_W//2 - 120, 335, 240, 55, "Solver", self.font).draw(self.screen)
+        Button(WINDOW_W//2 - 120, 410, 240, 55, "Scores", self.font).draw(self.screen)
 
     def _handle_home(self, event):
-        if Button(WINDOW_W//2 - 120, 290, 240, 55, "Joueur", self.font).clicked(event):
+        if Button(WINDOW_W//2 - 120, 260, 240, 55, "Joueur", self.font).clicked(event):
             self.show_level_select("joueur")
-        elif Button(WINDOW_W//2 - 120, 370, 240, 55, "Solver", self.font).clicked(event):
+        elif Button(WINDOW_W//2 - 120, 335, 240, 55, "Solver", self.font).clicked(event):
             self.show_level_select("solver")
+        elif Button(WINDOW_W//2 - 120, 410, 240, 55, "Scores", self.font).clicked(event):
+            self.screen_state = "scores"
+
+    # ── Scores ──────────────────────────────────────────────────────
+    def _draw_scores(self):
+        self._blit_centered(self.font_lg, "Scores", ACCENT_C, 70)
+        scores = []
+        if os.path.exists(SCORES_FILE):
+            with open(SCORES_FILE, "r", encoding="utf-8") as f:
+                scores = json.load(f)
+
+        if not scores:
+            self._blit_centered(self.font, "Aucun score enregistré.", TEXTE2_C, 300)
+        else:
+            # En-têtes
+            cols = [120, 320, 500, 660]
+            headers = ["Prénom", "Niveau", "Temps", "Coups"]
+            for cx, h in zip(cols, headers):
+                surf = self.font_sm.render(h, True, TEXTE2_C)
+                self.screen.blit(surf, (cx, 140))
+            pygame.draw.line(self.screen, MUR_C,
+                             (100, 165), (WINDOW_W - 100, 165), 1)
+
+            # Lignes (max 12 entrées visibles)
+            for i, entry in enumerate(scores[-12:]):
+                y = 180 + i * 36
+                color = TEXTE_C if i % 2 == 0 else TEXTE2_C
+                for cx, key in zip(cols, ["prenom", "niveau", "temps", "coups"]):
+                    self.screen.blit(
+                        self.font_sm.render(str(entry.get(key, "")), True, color),
+                        (cx, y))
+
+        Button(30, 30, 120, 44, "< Retour", self.font_sm).draw(self.screen)
+
+    def _handle_scores(self, event):
+        if Button(30, 30, 120, 44, "< Retour", self.font_sm).clicked(event):
+            self.screen_state = "home"
 
     # ── Transitions d'écran (stubs) ─────────────────────────────────
     def show_home(self):

@@ -1,5 +1,4 @@
 import pygame
-import sys
 from collections import deque
 
 # ── Constantes ────────────────────────────────────────────────────────────
@@ -8,10 +7,8 @@ SPLIT_X  = 1133
 
 FOND           = (30,  30,  46)
 MUR_C          = (69,  71,  90)
-SOL_C          = (49,  50,  68)
 CAISSE_C       = (243, 139, 168)
 CIBLE_C        = (166, 227, 161)
-CAISSE_CIBLE_C = (137, 220, 235)
 BTN_C          = (49,  50,  68)
 BTN_HOVER_C    = (88,  91, 112)
 TEXTE_C        = (205, 214, 244)
@@ -112,7 +109,9 @@ class GraphWindow:
 
         self.speed_slider = Slider(SPLIT_X + 27, 380, 420, 1, 50, 10, self.font_sm)
 
+        self._running = True
         self._compute_layout()
+        self._node_list = [(x, y, s) for s, (x, y) in self.node_positions.items()]
         if self.algo == 'Astar':
             h_values = [e[2] for e in self.exploration_log if len(e) == 3]
             self._max_h = max(h_values, default=1) or 1
@@ -133,9 +132,13 @@ class GraphWindow:
                 children.setdefault(parent, []).append(etat)
 
         depth_nodes = {}
+        visited = set()
         queue = deque([(root, 0)])
         while queue:
             etat, d = queue.popleft()
+            if etat in visited:
+                continue
+            visited.add(etat)
             depth_nodes.setdefault(d, []).append(etat)
             for child in children.get(etat, []):
                 queue.append((child, d + 1))
@@ -156,7 +159,7 @@ class GraphWindow:
 
     # ── Main loop ─────────────────────────────────────────────────────────
     def run(self):
-        while True:
+        while self._running:
             dt = self.clock.tick(60)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -166,6 +169,7 @@ class GraphWindow:
             self._update(dt)
             self._draw()
             pygame.display.flip()
+        pygame.quit()
 
     def _update(self, dt):
         if not self.replay_running:
@@ -195,7 +199,6 @@ class GraphWindow:
             return
 
         visible     = self.exploration_log[:self.replay_index + 1]
-        visible_set = {e[0] for e in visible}
 
         solution_set = set()
         if self.chemin:
@@ -265,7 +268,6 @@ class GraphWindow:
         lines = [
             f"Nœuds explorés : {total}",
             f"Affichés        : {visible}",
-            f"Opérations      : {total}",
         ]
         if self.chemin:
             lines.append(f"Chemin solution : {coups} coups")
@@ -346,8 +348,7 @@ class GraphWindow:
                     self.replay_running = True
 
             if Button(RX, GH - 93, 420, 67, "✕ Fermer", self.font_sm).clicked(event):
-                pygame.quit()
-                sys.exit()
+                self._running = False
 
         if event.type == pygame.MOUSEMOTION:
             mx, my = event.pos
@@ -357,13 +358,15 @@ class GraphWindow:
                 self.hover_state = None
 
     def _state_at(self, mx, my):
+        real_y = my + self.scroll_y
         best_dist, best_state = 10, None
-        for entry in self.exploration_log[:self.replay_index + 1]:
-            etat = entry[0]
-            if etat not in self.node_positions:
+        limit = self.replay_index + 1
+        # exploration_log[:limit] donne les états visibles
+        visible_states = {e[0] for e in self.exploration_log[:limit]}
+        for x, y, etat in self._node_list:
+            if etat not in visible_states:
                 continue
-            x, y = self.node_positions[etat]
-            d = abs(x - mx) + abs(y - (my + self.scroll_y))
+            d = abs(x - mx) + abs(y - real_y)
             if d < best_dist:
                 best_dist, best_state = d, etat
         return best_state

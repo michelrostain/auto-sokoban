@@ -50,3 +50,44 @@ def test_nb_visites_coherent_avec_log():
         m = copy.deepcopy(charger_niveau(1))
         _, _, nb_visites, log = solveur(m, mode=mode)
         assert nb_visites == len(log), f"{mode}: nb_visites doit égaler len(log)"
+
+
+def _make_graph_window_stub(algo='BFS'):
+    """Crée un GraphWindow minimal sans pygame pour tester le layout."""
+    from build_game import solveur, charger_niveau
+    import copy
+    m = copy.deepcopy(charger_niveau(1))
+    _, _, _, log = solveur(m, mode=algo)
+
+    import graph_view
+    obj = object.__new__(graph_view.GraphWindow)
+    obj.exploration_log = log[:graph_view.MAX_NODES]
+    obj.chemin          = None
+    obj.algo            = algo
+    obj.targets         = []
+    obj.node_positions  = {}
+    obj.parent_of       = {}
+    obj.tree_height     = 0
+    obj._compute_layout()
+    return obj
+
+def test_layout_bfs_positions_uniques():
+    gw = _make_graph_window_stub('BFS')
+    positions = list(gw.node_positions.values())
+    assert len(positions) == len(set(positions))
+
+def test_layout_racine_en_haut():
+    from build_game import charger_niveau, get_etat
+    import copy
+    gw = _make_graph_window_stub('BFS')
+    m = copy.deepcopy(charger_niveau(1))
+    etat_racine = get_etat(m)
+    _, y_racine = gw.node_positions[etat_racine]
+    min_y = min(py for _, py in gw.node_positions.values())
+    assert y_racine == min_y
+
+def test_layout_tous_les_etats_places():
+    gw = _make_graph_window_stub('BFS')
+    for entry in gw.exploration_log:
+        etat = entry[0]
+        assert etat in gw.node_positions

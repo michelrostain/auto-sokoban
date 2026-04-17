@@ -136,6 +136,8 @@ class App:
         self.solver_chemin       = None
         self.solver_etapes       = 0
         self.solver_visites      = 0
+        self.solver_exploration_log  = []
+        self.solver_targets          = []   # positions (x,y) des CIBLE dans la matrice
         self.matrice_solver_init = None
         self.matrice_base        = None
 
@@ -230,6 +232,10 @@ class App:
         else:
             self._draw_solver_stats(RX)
 
+        if self.solver_status in ("done", "stopped", "no_solution"):
+            Button(7, WINDOW_H - 160, 340, 57,
+                   "Voir la résolution de graphe", self.font_sm).draw(self.screen)
+
         Button(RX, WINDOW_H - 93, 320, 67, "< Accueil", self.font_sm).draw(self.screen)
 
     def _draw_solver_stats(self, rx):
@@ -281,6 +287,11 @@ class App:
             if Button(RX, 360, 320, 61, "Réinitialiser", self.font_sm).clicked(event):
                 self._reset_solver()
 
+        if self.solver_status in ("done", "stopped", "no_solution"):
+            if Button(7, WINDOW_H - 160, 340, 57,
+                      "Voir la résolution de graphe", self.font_sm).clicked(event):
+                self._open_graph_view()
+
     def _start_solver(self):
         self.solver_stop   = False
         self.solver_status = "running"
@@ -289,10 +300,11 @@ class App:
         self.solver_thread.start()
 
     def _solver_worker(self):
-        chemin, etapes, nb_visites = solveur(
+        chemin, etapes, nb_visites, exploration_log = solveur(
             copy.deepcopy(self.matrice_solver_init), self.solver_algo,
             stop_flag=lambda: self.solver_stop,
         )
+        self.solver_exploration_log = exploration_log
         self.solver_etapes  = etapes
         self.solver_visites = nb_visites
         if self.solver_stop:
@@ -316,9 +328,30 @@ class App:
         self.solver_chemin  = None
         self.solver_etapes  = 0
         self.solver_visites = 0
+        self.solver_exploration_log  = []
+        self.solver_targets          = []
         self.replay_active  = False
         self.replay_index   = 0
         self.replay_timer   = 0
+
+    def _open_graph_view(self):
+        import multiprocessing
+        from graph_view import _run_graph_process
+        from build_game import CIBLE
+        targets = [
+            (x, y)
+            for y, row in enumerate(self.matrice_solver_init)
+            for x, val in enumerate(row)
+            if val == CIBLE
+        ]
+        ctx = multiprocessing.get_context('spawn')
+        p = ctx.Process(
+            target=_run_graph_process,
+            args=(self.solver_exploration_log, self.solver_chemin,
+                  self.solver_algo, targets),
+            daemon=True,
+        )
+        p.start()
 
     # ── Victoire ────────────────────────────────────────────────────
     def _draw_victory(self):

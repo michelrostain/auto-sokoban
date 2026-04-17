@@ -253,12 +253,15 @@ def reconstruire_chemin(prev, etat_final):
 
 def solveur(matrice, mode='BFS', stop_flag=None):
     etat_initial = get_etat(matrice)
-    prev = {etat_initial: None}  # trace le chemin
+    prev = {etat_initial: None}
 
     if mode == 'Astar':
         file_ou_pile = [(0, etat_initial)]
+        h0 = heuristique(etat_initial, matrice)
+        exploration_log = [(etat_initial, None, h0)]
     else:
         file_ou_pile = [etat_initial]
+        exploration_log = [(etat_initial, None)]
 
     visites = {etat_initial}
     etapes = 0
@@ -267,7 +270,7 @@ def solveur(matrice, mode='BFS', stop_flag=None):
         etapes += 1
 
         if stop_flag is not None and etapes % 500 == 0 and stop_flag():
-            return None, etapes, len(visites)
+            return None, etapes, len(visites), exploration_log
 
         if mode == 'BFS':
             actuel = file_ou_pile.pop(0)
@@ -277,18 +280,19 @@ def solveur(matrice, mode='BFS', stop_flag=None):
             priorite, actuel = heapq.heappop(file_ou_pile)
 
         if est_gagne(actuel, matrice):
-            return reconstruire_chemin(prev, actuel), etapes, len(visites)
+            return reconstruire_chemin(prev, actuel), etapes, len(visites), exploration_log
 
         for voisin in get_voisins(actuel, matrice):
             if voisin not in visites:
                 visites.add(voisin)
-                prev[voisin] = actuel  # on note d'où on vient
-
+                prev[voisin] = actuel
                 if mode == 'Astar':
                     h = heuristique(voisin, matrice)
                     f_score = etapes + h
                     heapq.heappush(file_ou_pile, (f_score, voisin))
+                    exploration_log.append((voisin, actuel, h))
                 else:
                     file_ou_pile.append(voisin)
+                    exploration_log.append((voisin, actuel))
 
-    return None, etapes, len(visites)
+    return None, etapes, len(visites), exploration_log

@@ -91,3 +91,35 @@ def test_layout_tous_les_etats_places():
     for entry in gw.exploration_log:
         etat = entry[0]
         assert etat in gw.node_positions
+
+
+def test_integration_tous_algos_niveau_1():
+    import copy
+    from build_game import solveur, charger_niveau
+    for algo in ('BFS', 'DFS', 'Astar'):
+        m = copy.deepcopy(charger_niveau(1))
+        chemin, etapes, nb_visites, log = solveur(m, mode=algo)
+        assert chemin is not None, f"{algo}: doit trouver une solution"
+        assert len(log) > 0
+        assert nb_visites == len(log)
+        # La racine est dans le log
+        assert log[0][1] is None, f"{algo}: parent de la racine doit être None"
+        # Chaque état du chemin solution est dans le log
+        log_etats = {e[0] for e in log}
+        for etat in chemin:
+            assert etat in log_etats, f"{algo}: état du chemin absent du log"
+
+
+def test_stop_flag_retourne_log_partiel():
+    import copy
+    from build_game import solveur, charger_niveau
+    appels = [0]
+    def stop_after_1000():
+        appels[0] += 1
+        return appels[0] >= 2   # True dès le 2ème check (après ~1000 étapes)
+
+    m = copy.deepcopy(charger_niveau(4))   # niveau difficile
+    chemin, etapes, nb_visites, log = solveur(m, mode='DFS', stop_flag=stop_after_1000)
+    assert chemin is None
+    assert len(log) > 0    # log partiel retourné
+    assert nb_visites == len(log)

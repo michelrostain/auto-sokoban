@@ -39,12 +39,14 @@ def test_exploration_log_dfs_format():
     assert parent0 is None
 
 def test_log_pas_de_doublons():
-    m = copy.deepcopy(charger_niveau(1))
-    _, _, _, log = solveur(m, mode='BFS')
-    etats = [entry[0] for entry in log]
-    assert len(etats) == len(set(etats)), "Chaque état doit apparaître une seule fois"
+    for mode in ('BFS', 'DFS', 'Astar'):
+        m = copy.deepcopy(charger_niveau(1))
+        _, _, _, log = solveur(m, mode=mode)
+        etats = [entry[0] for entry in log]
+        assert len(etats) == len(set(etats)), f"{mode}: chaque état doit apparaître une seule fois"
 
 def test_nb_visites_coherent_avec_log():
-    m = copy.deepcopy(charger_niveau(1))
-    _, _, nb_visites, log = solveur(m, mode='BFS')
-    assert nb_visites == len(log)
+    for mode in ('BFS', 'DFS', 'Astar'):
+        m = copy.deepcopy(charger_niveau(1))
+        _, _, nb_visites, log = solveur(m, mode=mode)
+        assert nb_visites == len(log), f"{mode}: nb_visites doit égaler len(log)"

@@ -232,7 +232,7 @@ class App:
             self._draw_solver_stats(RX)
 
         if self.solver_status in ("done", "stopped", "no_solution"):
-            Button(7, WINDOW_H - 160, 340, 57,
+            Button(RX, 735, 420, 47,
                    "Voir la résolution de graphe", self.font_sm).draw(self.screen)
 
         Button(RX, WINDOW_H - 93, 320, 67, "< Accueil", self.font_sm).draw(self.screen)
@@ -287,7 +287,7 @@ class App:
                 self._reset_solver()
 
         if self.solver_status in ("done", "stopped", "no_solution"):
-            if Button(7, WINDOW_H - 160, 340, 57,
+            if Button(RX, 735, 420, 47,
                       "Voir la résolution de graphe", self.font_sm).clicked(event):
                 self._open_graph_view()
 

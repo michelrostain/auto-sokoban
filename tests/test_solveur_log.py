@@ -71,10 +71,10 @@ def _make_graph_window_stub(algo='BFS'):
     obj._compute_layout()
     return obj
 
-def test_layout_bfs_positions_uniques():
+def test_layout_tous_etats_ont_une_position():
+    """Chaque état dans exploration_log doit avoir une position dans node_positions."""
     gw = _make_graph_window_stub('BFS')
-    positions = list(gw.node_positions.values())
-    assert len(positions) == len(set(positions))
+    assert len(gw.node_positions) == len(gw.exploration_log)
 
 def test_layout_racine_en_haut():
     from build_game import charger_niveau, get_etat

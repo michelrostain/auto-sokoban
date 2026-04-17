@@ -137,7 +137,6 @@ class App:
         self.solver_etapes       = 0
         self.solver_visites      = 0
         self.solver_exploration_log  = []
-        self.solver_targets          = []   # positions (x,y) des CIBLE dans la matrice
         self.matrice_solver_init = None
         self.matrice_base        = None
 
@@ -329,7 +328,6 @@ class App:
         self.solver_etapes  = 0
         self.solver_visites = 0
         self.solver_exploration_log  = []
-        self.solver_targets          = []
         self.replay_active  = False
         self.replay_index   = 0
         self.replay_timer   = 0
@@ -337,7 +335,6 @@ class App:
     def _open_graph_view(self):
         import multiprocessing
         from graph_view import _run_graph_process
-        from build_game import CIBLE
         targets = [
             (x, y)
             for y, row in enumerate(self.matrice_solver_init)
@@ -545,6 +542,7 @@ class App:
         self.solver_status       = "idle"
         self.solver_chemin       = None
         self.solver_stop         = False
+        self.solver_exploration_log  = []
         self.replay_active       = False
         self.replay_index        = 0
         self.replay_timer        = 0

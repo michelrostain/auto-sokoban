@@ -251,7 +251,7 @@ def reconstruire_chemin(prev, etat_final):
     chemin.reverse()  # on remet dans l'ordre chronologique
     return chemin
 
-def solveur(matrice, mode='BFS', stop_flag=None):
+def solveur(matrice, mode='BFS', stop_flag=None, w=100):
     etat_initial = get_etat(matrice)
     prev = {etat_initial: None}
 
@@ -288,7 +288,7 @@ def solveur(matrice, mode='BFS', stop_flag=None):
                 prev[voisin] = actuel
                 if mode == 'Astar':
                     h = heuristique(voisin, matrice)
-                    f_score = etapes + h
+                    f_score = etapes + w*h
                     heapq.heappush(file_ou_pile, (f_score, voisin))
                     exploration_log.append((voisin, actuel, h))
                 else:

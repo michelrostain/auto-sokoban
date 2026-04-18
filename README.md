@@ -10,7 +10,37 @@ Technique de parcours de graphe qui explore un chemin dans un graphe jusqu'àun 
 Technique de parcours de graphe qui combine le coût réel parcouru (g) et une estimation de la distance restante jusqu'à l'arrivée (h), appelée heuristique. A* choisit à chaque étape le nœud dont la somme f = g + h est la plus faible. L'heuristique peut être la distance euclidienne, de Manhattan, ou toute autre estimation qui ne surestime jamais la distance réelle. Sans heuristique (h=0), A* explore par coût croissant sans orientation préférentielle.
 
 ### Le coût   
+   
+Soit V le nombre de sommets (états du graphe), et E le nombre d'arrêtes (transitions valides entre états).   
 
+**BFS :**   
+Complexité temporelle O(V + E) : chaque sommet et chaque arrêtes sont explorées une seule fois.   
+Complexité spatiale : tous les états d'un niveaux sont mis en mémoire.   
+Garantie : solution optimale (la plus courte) toujours trouvée.   
+
+**DFS :**   
+Complexité temporelle O(V + E) ; chaque sommet et chaque arrête d'un chemin est exploré une fois.
+
+Complexité spatiale : très faible, DFS ne stocke qu'un seul chemin à la fois.
+
+Garantie : aucune. Peut trouver une chamin très long ou s'enfoncer très loin avant de trouver   
+   
+**Astar :**   
+
+COmplexité : O(V log V)
+
+Coût : explore en priorité les états dont le score f=g+h est lke plus faible.   
+- G = coût réel depuis l'état inital   
+- H = estimation heuristique du coût restant   
+
+La file de priorité est maintenue  rangée grâce à heapq, qui maintient en haut de la liste le score le plus faible de la distance de manhattan.
+
+Garantie : solution optimale si l'heuristique est admissible, c'est a dire si elle ne surestime jamais le coût réel. La distance de Manhattan est admissible car elle ignore les obstacles et sous estime toujours.
+  
+**Une bonne approximation rapide vaut mieux qu'une réponse exacte trop couteuse à obtenir**   
+
+**La distance de Manhattan :**   
+C'est l'heuristique qui correspond à la géométrie réelle des déplacements. Vu qu'il n'y a pas de possibilité de se déplacer en diagonale, la distance Euclidienne sous estimerai trop la  distance vers les cibles et serai trop loin d'une "bonne approximation".
 
 
 ### Le sokoban : un graphe en mouvement    
@@ -34,9 +64,6 @@ Place le joueur à sa nouvelle position (JOUEUR_SUR_CIBLE ou JOUEUR).
 
 **def est_gagne :**    
 Permet de comparer les positions de cibles et des caisses. Si celkles ci sont identiques alors c'est gagné.
-
-**def deplacer_joueur :**    
-Permet de générer les effets du déplacement du joueur (changement d'état des cases)
 
 **def mouvement_valide :**    
 Permet de définir les mouvement autorisés du jeu
@@ -129,5 +156,14 @@ Au **survol d'un nœud** (hover), une mini-grille apparaît montrant la position
 |---|---|
 | Bleu | h_score élevé → caisses loin des cibles (mauvais état) |
 | Rouge | h_score faible → caisses proches des cibles (état prioritaire) |
-| Intermédiaire | Dégradé continu bleu→rouge selon h / h_max |
+| Intermédiaire | Dégradé continu bleu→rouge selon h / h_max |   
+
+
+---
+## Axes d'amélioration   
+
+**Amélioration de l'algorithme Astar :**   
+Il serait oertinent dans le contexte du SOKODAN d'ajouter la prise en compte de sobsatcles dans le calcul du coût. Ainsi l'heuristique deviendrai inadmissible( c'est à dire qu'elle ne donnerai pas le nombre de coups minimum pour la prochaine solution valide). Ce facteur serait à ajouter au calcul de la distance de Manahattan de la façon suivante :    
+
+
 

@@ -39,7 +39,7 @@ Permet de comparer les positions de cibles et des caisses. Si celkles ci sont id
 Permet de générer les effets du déplacement du joueur (changement d'état des cases)
 
 **def mouvement_valide :**    
-Permet de définir les mouvement du jeu autorisés
+Permet de définir les mouvement autorisés du jeu
 
 **def annuler_mouvement :**   
 Permet de revenir en arrière pour le joueur
@@ -100,4 +100,34 @@ Au **survol d'un nœud** (hover), une mini-grille apparaît montrant la position
 | Forme de l'arbre | Large et plat | Profond et fin | Irrégulier, suit les priorités |
 | Ce qu'on voit progresser | Les vagues horizontales | La plongée + les remontées | Les pistes prometteuses rouges |
 | Hover | Mini-grille | Mini-grille | Mini-grille + lignes Manhattan |
+
+### Légende des couleurs des nœuds
+
+**Commun à tous les algos :**
+
+| Couleur | Signification |
+|---|---|
+| Blanc + halo violet | Nœud courant du replay (le dernier découvert affiché) |
+| Vert | Nœud appartenant au chemin solution |
+
+**BFS :**
+
+| Couleur | Signification |
+|---|---|
+| Violet | Tous les nœuds découverts |
+
+**DFS :**
+
+| Couleur | Signification |
+|---|---|
+| Violet | Chemin actif (racine → nœud courant) |
+| Gris foncé | Branches abandonnées (backtrack) |
+
+**Astar :**
+
+| Couleur | Signification |
+|---|---|
+| Bleu | h_score élevé → caisses loin des cibles (mauvais état) |
+| Rouge | h_score faible → caisses proches des cibles (état prioritaire) |
+| Intermédiaire | Dégradé continu bleu→rouge selon h / h_max |
 
